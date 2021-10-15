@@ -1,5 +1,5 @@
 import numpy as np
-
+import tensorflow.compat.v1 as tf
 from baseline_constants import BYTES_WRITTEN_KEY, BYTES_READ_KEY, LOCAL_COMPUTATIONS_KEY
 
 class Server:
