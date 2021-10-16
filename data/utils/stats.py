@@ -32,7 +32,8 @@ def load_data(name):
 
     parent_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     data_dir = os.path.join(parent_path, name, 'data')
-    subdir = os.path.join(data_dir, 'all_data')
+    # subdir = os.path.join(data_dir, 'all_data')
+    subdir = os.path.join(data_dir, 'sampled_data')
 
     files = os.listdir(subdir)
     files = [f for f in files if f.endswith('.json')]
