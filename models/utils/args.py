@@ -11,11 +11,15 @@ def parse_args():
                     help='name of dataset;',
                     type=str,
                     choices=DATASETS,
-                    required=True)
+                    default='femnist',
+                    #required=True
+                    )
     parser.add_argument('-model',
                     help='name of model;',
                     type=str,
-                    required=True)
+                    default='cnn',
+                    #required=True
+                    )
     parser.add_argument('--num-rounds',
                     help='number of rounds to simulate;',
                     type=int,
