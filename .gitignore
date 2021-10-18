@@ -5,6 +5,7 @@ build/
 data/*/data
 data/*/full-size-dataset
 data/*/small-size-dataset
+data/*/tiny-size-dataset
 models/__pycache__/
 models/*/__pycache__/
 models/*/preprocess/__pycache__/

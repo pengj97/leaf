@@ -17,7 +17,8 @@ def parse_args():
     parser.add_argument('-model',
                     help='name of model;',
                     type=str,
-                    default='cnn',
+                    default='softmax'
+                    #default='cnn',
                     #required=True
                     )
     parser.add_argument('--num-rounds',
