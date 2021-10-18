@@ -114,16 +114,17 @@ def create_clients(users, groups, train_data, test_data, model):
     return clients
 
 
-def setup_clients(dataset, model=None, use_val_set=False):
+def  setup_clients(dataset, model=None, use_val_set=False):
     """Instantiates clients based on given train and test data directories.
 
     Return:
         all_clients: list of Client objects.
     """
     eval_set = 'test' if not use_val_set else 'val'
-    train_data_dir = os.path.join('..', 'data', dataset, 'data', 'train')
-    test_data_dir = os.path.join('..', 'data', dataset, 'data', eval_set)
-
+    # train_data_dir = os.path.join('..', 'data', dataset, 'data', 'train')
+    # test_data_dir = os.path.join('..', 'data', dataset, 'data', eval_set)
+    train_data_dir = os.path.join('data', dataset, 'data', 'train')
+    test_data_dir = os.path.join('data', dataset, 'data', eval_set)
     users, groups, train_data, test_data = read_data(train_data_dir, test_data_dir)
 
     clients = create_clients(users, groups, train_data, test_data, model)
