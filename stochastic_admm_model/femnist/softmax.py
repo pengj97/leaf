@@ -15,6 +15,7 @@ class ClientModel(Model):
         self._eta_cur = None
         self._eta_pre = None
         self.init_flag = False
+        self.model = None
         super(ClientModel, self).__init__(seed, lr)
 
     def create_model(self):
@@ -34,9 +35,10 @@ class ClientModel(Model):
 
         # stochastic-admm optimizer
         model = tf.trainable_variables()
+        self.model = model
 
         if not self.init_flag:
-            self.init_eta(model)
+            self.init_eta()
 
         grad = tf.gradients(loss, model)
         lr = tf.constant(self.lr, dtype=tf.float32)
@@ -48,7 +50,7 @@ class ClientModel(Model):
         eval_metric_ops = tf.count_nonzero(tf.equal(labels, predictions["classes"]))
         return features, labels, train_op, eval_metric_ops, loss
 
-    def init_eta(self, model):
+    def init_eta(self):
         self._eta_cur = [tf.constant(0, shape=(784, 62), dtype=tf.float32), 
                          tf.constant(0, shape=(62, ), dtype=tf.float32)] 
         self._eta_pre = [tf.constant(0, shape=(784, 62), dtype=tf.float32), 
@@ -57,10 +59,12 @@ class ClientModel(Model):
 
     def update_eta(self, model_server):
         self._eta_pre = self._eta_cur.copy()
-        model_client = tf.trainable_variables()
-        for eta_c, m_c, m_s in zip(self._eta_cur, model_client, model_server):
-            eta_c += beta / 2 * (m_c- m_s)
-            eta_inter = eta_c.eval()
+        model_client = self.model
+        with self.sess.as_default():
+            self._eta_pre[0] = self._eta_pre[0] +  beta / 2 * (model_client[0]- model_server[0])
+            self._eta_pre[1] = self._eta_pre[1] +  beta / 2 * (model_client[1]- model_server[1])
+            eta_inter_0 = self._eta_pre[0].eval()
+            eta_inter_1 = self._eta_pre[1].eval()
     
     def get_eta(self):
         return self._eta_cur, self._eta_pre

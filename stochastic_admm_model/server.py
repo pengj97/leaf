@@ -1,7 +1,7 @@
 import math
 import numpy as np
 import tensorflow.compat.v1 as tf
-from baseline_constants import BYTES_WRITTEN_KEY, BYTES_READ_KEY, LOCAL_COMPUTATIONS_KEY, beta, lamda
+from baseline_constants import BYTES_WRITTEN_KEY, BYTES_READ_KEY, LOCAL_COMPUTATIONS_KEY, beta, lamda, graph
 
 class Server:
     
@@ -17,7 +17,7 @@ class Server:
         self.round_numer = round_number
     
     def set_lr_server(self):
-        num_clients = len(self.select_clients)
+        num_clients = len(self.selected_clients)
         self.lr =  1 / (self.lr * math.sqrt(self.round_numer) + num_clients * beta)
 
     def select_clients(self, my_round, possible_clients, num_clients=20):
@@ -75,20 +75,24 @@ class Server:
             sys_metrics[c.id][BYTES_WRITTEN_KEY] += c.model.size
             sys_metrics[c.id][LOCAL_COMPUTATIONS_KEY] = comp
 
-            self.updates.append((num_samples, update, eta_cur, eta_pre))
+            self.updates.append((eta_cur, eta_pre))
             c.model.update_eta(self.model)
 
         return sys_metrics
 
     def update_model(self):
-        base = [tf.constant(0, shape=(784, 62), dtype=tf.float32), 
-                tf.constant(0, shape=(62, ), dtype=tf.float32)] 
-        for (_, _, eta_cur, eta_pre) in self.updates:
-            for i in range(len(eta_cur)):
-                base[i] += 2 * eta_cur[i] - eta_pre[i]
-        self.set_lr_server()
+        with graph.as_default():
+            base = [tf.constant(0, shape=(784, 62), dtype=tf.float32), 
+                    tf.constant(0, shape=(62, ), dtype=tf.float32)] 
+            for (eta_cur, eta_pre) in self.updates:
+                for i in range(len(eta_cur)):
+                    base[i] = base[i] + 2 * eta_cur[i] - eta_pre[i]
+            self.set_lr_server()
+            lr = tf.constant(self.lr, dtype=tf.float32)
 
-        self.model = self.model + self.lr * base
+            self.model[0] = self.model[0] + lr * base[0]
+            self.model[1] = self.model[1] + lr * base[1]
+
         self.updates = []
 
     def test_model(self, clients_to_test, set_to_use='test'):
@@ -106,7 +110,7 @@ class Server:
             clients_to_test = self.selected_clients
 
         for client in clients_to_test:
-            client.model.set_params(self.model)
+            # client.model.set_params(self.model)
             c_metrics = client.test(set_to_use)
             metrics[client.id] = c_metrics
         

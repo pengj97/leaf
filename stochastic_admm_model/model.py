@@ -7,7 +7,7 @@ import os
 import sys
 import tensorflow.compat.v1 as tf
 
-from baseline_constants import ACCURACY_KEY, beta, lamda
+from baseline_constants import ACCURACY_KEY, beta, lamda, graph
 
 from utils.model_utils import batch_data
 from utils.tf_utils import graph_size
@@ -20,33 +20,34 @@ class Model(ABC):
         self.seed = seed
         self._optimizer = optimizer
         
-        self.graph = tf.Graph()
-        with self.graph.as_default():
+        # self.graph = tf.Graph()
+        with graph.as_default():
             tf.set_random_seed(123 + self.seed)
             self.features, self.labels, self.train_op, self.eval_metric_ops, self.loss = self.create_model()
             self.saver = tf.train.Saver()
-        self.sess = tf.Session(graph=self.graph)
+        self.sess = tf.Session(graph=graph)
 
-        self.size = graph_size(self.graph)
+        self.size = graph_size(graph)
 
-        with self.graph.as_default():
+        with graph.as_default():
             self.sess.run(tf.global_variables_initializer())
 
             metadata = tf.RunMetadata()
             opts = tf.profiler.ProfileOptionBuilder.float_operation()
-            self.flops = tf.profiler.profile(self.graph, run_meta=metadata, cmd='scope', options=opts).total_float_ops
+            self.flops = tf.profiler.profile(graph, run_meta=metadata, cmd='scope', options=opts).total_float_ops
 
         np.random.seed(self.seed)
 
     def set_params(self, model_params):
-        with self.graph.as_default():
+        with graph.as_default():
             all_vars = tf.trainable_variables()
             for variable, value in zip(all_vars, model_params):
                 variable.load(value, self.sess)
 
     def get_params(self):
-        with self.graph.as_default():
-            model_params = self.sess.run(tf.trainable_variables())
+        with graph.as_default():
+            # model_params = self.sess.run(tf.trainable_variables())
+            model_params = tf.trainable_variables()
         return model_params
     
     def set_lr_client(self, round_number):
@@ -102,7 +103,7 @@ class Model(ABC):
             input_data = self.process_x(batched_x)
             target_data = self.process_y(batched_y)
 
-            with self.graph.as_default():
+            with graph.as_default():
                 self.sess.run(self.train_op,
                     feed_dict={
                         self.features: input_data,
@@ -120,7 +121,7 @@ class Model(ABC):
         """
         x_vecs = self.process_x(data['x'])
         labels = self.process_y(data['y'])
-        with self.graph.as_default():
+        with graph.as_default():
             tot_acc, loss = self.sess.run(
                 [self.eval_metric_ops, self.loss],
                 feed_dict={self.features: x_vecs, self.labels: labels}
