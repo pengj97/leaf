@@ -1,14 +1,24 @@
+import math
 import numpy as np
 import tensorflow.compat.v1 as tf
-from baseline_constants import BYTES_WRITTEN_KEY, BYTES_READ_KEY, LOCAL_COMPUTATIONS_KEY
+from baseline_constants import BYTES_WRITTEN_KEY, BYTES_READ_KEY, LOCAL_COMPUTATIONS_KEY, beta, lamda
 
 class Server:
     
-    def __init__(self, client_model):
+    def __init__(self, client_model, lr):
         self.client_model = client_model
+        self.lr = lr
         self.model = client_model.get_params()
         self.selected_clients = []
         self.updates = []
+        self.round_numer = 0
+
+    def set_round_number(self, round_number):
+        self.round_numer = round_number
+    
+    def set_lr_server(self):
+        num_clients = len(self.select_clients)
+        self.lr =  1 / (self.lr * math.sqrt(self.round_numer) + num_clients * beta)
 
     def select_clients(self, my_round, possible_clients, num_clients=20):
         """Selects num_clients clients randomly from possible_clients.
@@ -56,27 +66,29 @@ class Server:
                    BYTES_READ_KEY: 0,
                    LOCAL_COMPUTATIONS_KEY: 0} for c in clients}
         for c in clients:
-            c.model.set_params(self.model)
+            # c.model.set_params(self.model)
+            c.model.set_lr_client(self.round_numer)
             comp, num_samples, update = c.train(num_epochs, batch_size, minibatch)
+            eta_cur, eta_pre = c.model.get_eta()
 
             sys_metrics[c.id][BYTES_READ_KEY] += c.model.size
             sys_metrics[c.id][BYTES_WRITTEN_KEY] += c.model.size
             sys_metrics[c.id][LOCAL_COMPUTATIONS_KEY] = comp
 
-            self.updates.append((num_samples, update))
+            self.updates.append((num_samples, update, eta_cur, eta_pre))
+            c.model.update_eta(self.model)
 
         return sys_metrics
 
     def update_model(self):
-        total_weight = 0.
-        base = [0] * len(self.updates[0][1])
-        for (client_samples, client_model) in self.updates:
-            total_weight += client_samples
-            for i, v in enumerate(client_model):
-                base[i] += (client_samples * v.astype(np.float64))
-        averaged_soln = [v / total_weight for v in base]
+        base = [tf.constant(0, shape=(784, 62), dtype=tf.float32), 
+                tf.constant(0, shape=(62, ), dtype=tf.float32)] 
+        for (_, _, eta_cur, eta_pre) in self.updates:
+            for i in range(len(eta_cur)):
+                base[i] += 2 * eta_cur[i] - eta_pre[i]
+        self.set_lr_server()
 
-        self.model = averaged_soln
+        self.model = self.model + self.lr * base
         self.updates = []
 
     def test_model(self, clients_to_test, set_to_use='test'):

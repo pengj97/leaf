@@ -1,4 +1,6 @@
 """Configuration file for common models/experiments"""
+import tensorflow.compat.v1 as tf 
+graph = tf.Graph()
 
 MAIN_PARAMS = { 
     'sent140': {
@@ -54,3 +56,7 @@ LOCAL_COMPUTATIONS_KEY = 'local_computations'
 NUM_ROUND_KEY = 'round_number'
 NUM_SAMPLES_KEY = 'num_samples'
 CLIENT_ID_KEY = 'client_id'
+
+# Params of stochastic admm
+lamda = 0.8
+beta = 0.2

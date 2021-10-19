@@ -18,7 +18,7 @@ from utils.args import parse_args
 from utils.model_utils import read_data
 
 # tf.device('/gpu:3')
-os.environ['CUDA_VISIBLE_DEVICES']='/gpu:3'
+os.environ['CUDA_VISIBLE_DEVICES']='1'
 STAT_METRICS_PATH = 'metrics/stat_metrics.csv'
 SYS_METRICS_PATH = 'metrics/sys_metrics.csv'
 

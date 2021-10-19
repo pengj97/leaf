@@ -18,6 +18,7 @@ class ClientModel(Model):
             tf.float32, shape=[None, IMAGE_SIZE * IMAGE_SIZE], name='features')
         labels = tf.placeholder(tf.int64, shape=[None], name='labels')
         # softmax_regression : input_layer(784, 1) -> output_layer(62, 1)
+        # input_layer = tf.reshape(features, [-1, IMAGE_SIZE * IMAGE_SIZE, 1])
         logits = tf.layers.dense(inputs=features, units=self.num_classes)
         predictions = {
           "classes": tf.argmax(input=logits, axis=1),

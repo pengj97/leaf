@@ -21,6 +21,7 @@ from utils.model_utils import read_data
 os.environ['CUDA_VISIBLE_DEVICES']='/gpu:3'
 STAT_METRICS_PATH = 'metrics/stat_metrics.csv'
 SYS_METRICS_PATH = 'metrics/sys_metrics.csv'
+tf.disable_eager_execution()
 
 def main():
 
@@ -60,7 +61,7 @@ def main():
     client_model = ClientModel(args.seed, *model_params)
 
     # Create server
-    server = Server(client_model)
+    server = Server(client_model, args.lr)
 
     # Create clients
     clients = setup_clients(args.dataset, client_model, args.use_val_set)
@@ -76,6 +77,7 @@ def main():
     # Simulate training
     for i in range(num_rounds):
         print('--- Round %d of %d: Training %d Clients ---' % (i + 1, num_rounds, clients_per_round))
+        server.set_round_number(i + 1)
 
         # Select clients to train this round
         server.select_clients(i, online(clients), num_clients=clients_per_round)

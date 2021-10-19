@@ -2,11 +2,12 @@
 
 from abc import ABC, abstractmethod
 import numpy as np
+import math
 import os
 import sys
 import tensorflow.compat.v1 as tf
 
-from baseline_constants import ACCURACY_KEY
+from baseline_constants import ACCURACY_KEY, beta, lamda
 
 from utils.model_utils import batch_data
 from utils.tf_utils import graph_size
@@ -18,7 +19,7 @@ class Model(ABC):
         self.lr = lr
         self.seed = seed
         self._optimizer = optimizer
-
+        
         self.graph = tf.Graph()
         with self.graph.as_default():
             tf.set_random_seed(123 + self.seed)
@@ -47,6 +48,9 @@ class Model(ABC):
         with self.graph.as_default():
             model_params = self.sess.run(tf.trainable_variables())
         return model_params
+    
+    def set_lr_client(self, round_number):
+        self.lr = 1 / (self.lr * math.sqrt(round_number) + beta)
 
     @property
     def optimizer(self):
@@ -97,7 +101,7 @@ class Model(ABC):
             
             input_data = self.process_x(batched_x)
             target_data = self.process_y(batched_y)
-            
+
             with self.graph.as_default():
                 self.sess.run(self.train_op,
                     feed_dict={
