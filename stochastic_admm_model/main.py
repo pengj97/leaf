@@ -61,7 +61,7 @@ def main():
     client_model = ClientModel(args.seed, *model_params)
 
     # Create server
-    server = Server(client_model, args.lr)
+    server = Server(client_model, model_params[0])
 
     # Create clients
     clients = setup_clients(args.dataset, client_model, args.use_val_set)

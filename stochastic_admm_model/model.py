@@ -21,26 +21,23 @@ class Model(ABC):
         self._optimizer = optimizer
         self.model_local = None
 
+        with graph.as_default():
+            tf.set_random_seed(123 + self.seed)
+            self.eta_cur = [np.zeros((784, 62)), np.zeros(62)] 
+            self.eta_pre = [np.zeros((784, 62)), np.zeros(62)] 
+            self.features, self.labels, self.train_op, self.eval_metric_ops, self.loss = self.create_model()
+            self.saver = tf.train.Saver()
+
         self.sess = tf.Session(graph=graph)
 
         self.size = graph_size(graph)
 
         with graph.as_default():
-            self.eta_cur = [tf.Variable(np.zeros((784, 62)), trainable=False, dtype=tf.float32), 
-                             tf.Variable(np.zeros(62), trainable=False, dtype=tf.float32)] 
-            self.eta_pre = [tf.Variable(np.zeros((784, 62)), trainable=False, dtype=tf.float32), 
-                             tf.Variable(np.zeros(62), trainable=False, dtype=tf.float32)]
-
+            self.sess.run(tf.global_variables_initializer())
             metadata = tf.RunMetadata()
             opts = tf.profiler.ProfileOptionBuilder.float_operation()
             self.flops = tf.profiler.profile(graph, run_meta=metadata, cmd='scope', options=opts).total_float_ops
-
-        # self.graph = tf.Graph()
-        with graph.as_default():
-            tf.set_random_seed(123 + self.seed)
-            self.features, self.labels, self.train_op, self.eval_metric_ops, self.loss = self.create_model()
-            self.saver = tf.train.Saver()
-            self.sess.run(tf.global_variables_initializer())
+            
 
         np.random.seed(self.seed)
     

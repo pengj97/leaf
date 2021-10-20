@@ -45,17 +45,16 @@ class ClientModel(Model):
         return features, labels, train_op, eval_metric_ops, loss
     
     def update_eta(self, model_server):
-        with graph.as_default():
-            update0 = tf.assign(self.eta_pre[0], self.eta_cur[0])
-            update1 = tf.assign(self.eta_pre[1], self.eta_cur[1])
-            update2 = tf.assign(self.eta_cur[0], self.eta_cur[0] +  beta / 2 * (self.model_local[0] - model_server[0]))
-            update3 = tf.assign(self.eta_cur[1], self.eta_cur[1] +  beta / 2 * (self.model_local[1] - model_server[1]))
-            update_eta_op = tf.group(update0, update1, update2, update3)
-            self.sess.run(update_eta_op)
+        model_local = self.get_params()
+        self.eta_pre = self.eta_cur.copy()
+        for i in range(len(self.eta_cur)):
+            self.eta_cur[i] = self.eta_cur[i] +  beta / 2 * (model_local[i] - model_server[i])
+            for j in np.nditer(self.eta_cur[i], op_flags=['readwrite']):
+                if j > lamda: j = lamda
+                elif j < -lamda: j = -lamda
     
     def get_eta(self):
-        with graph.as_default():
-            return self.sess.run((self.eta_cur, self.eta_pre))
+        return self.eta_cur, self.eta_pre
     
     def process_x(self, raw_x_batch):
         return np.array(raw_x_batch)
