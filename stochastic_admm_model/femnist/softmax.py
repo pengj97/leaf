@@ -2,7 +2,7 @@ from numpy.core.fromnumeric import shape
 import tensorflow.compat.v1 as tf
 
 from model import Model
-from baseline_constants import lamda, beta
+from baseline_constants import lamda, beta, graph
 import numpy as np
 
 tf.disable_eager_execution()
@@ -12,11 +12,8 @@ IMAGE_SIZE = 28
 class ClientModel(Model):
     def __init__(self, seed, lr, num_classes):
         self.num_classes = num_classes
-        self._eta_cur = None
-        self._eta_pre = None
-        self.init_flag = False
-        self.model = None
         super(ClientModel, self).__init__(seed, lr)
+
 
     def create_model(self):
         """Model function for CNN."""
@@ -35,39 +32,30 @@ class ClientModel(Model):
 
         # stochastic-admm optimizer
         model = tf.trainable_variables()
-        self.model = model
-
-        if not self.init_flag:
-            self.init_eta()
+        self.model_local = model.copy()
 
         grad = tf.gradients(loss, model)
         lr = tf.constant(self.lr, dtype=tf.float32)
-
-        update0 = tf.assign(model[0], model[0] - lr * (grad[0] + 2 * self._eta_cur[0] - self._eta_pre[0]))
-        update1 = tf.assign(model[1], model[1] - lr * (grad[1] + 2 * self._eta_cur[1] - self._eta_pre[1]))
+        
+        update0 = tf.assign(model[0], model[0] - lr * (grad[0] + 2 * self.eta_cur[0] - self.eta_pre[0]))
+        update1 = tf.assign(model[1], model[1] - lr * (grad[1] + 2 * self.eta_cur[1] - self.eta_pre[1]))
         train_op = tf.group(update0, update1)
         
         eval_metric_ops = tf.count_nonzero(tf.equal(labels, predictions["classes"]))
         return features, labels, train_op, eval_metric_ops, loss
-
-    def init_eta(self):
-        self._eta_cur = [tf.constant(0, shape=(784, 62), dtype=tf.float32), 
-                         tf.constant(0, shape=(62, ), dtype=tf.float32)] 
-        self._eta_pre = [tf.constant(0, shape=(784, 62), dtype=tf.float32), 
-                         tf.constant(0, shape=(62, ), dtype=tf.float32)] 
-        self.init_flag = True
-
+    
     def update_eta(self, model_server):
-        self._eta_pre = self._eta_cur.copy()
-        model_client = self.model
-        with self.sess.as_default():
-            self._eta_pre[0] = self._eta_pre[0] +  beta / 2 * (model_client[0]- model_server[0])
-            self._eta_pre[1] = self._eta_pre[1] +  beta / 2 * (model_client[1]- model_server[1])
-            eta_inter_0 = self._eta_pre[0].eval()
-            eta_inter_1 = self._eta_pre[1].eval()
+        with graph.as_default():
+            update0 = tf.assign(self.eta_pre[0], self.eta_cur[0])
+            update1 = tf.assign(self.eta_pre[1], self.eta_cur[1])
+            update2 = tf.assign(self.eta_cur[0], self.eta_cur[0] +  beta / 2 * (self.model_local[0] - model_server[0]))
+            update3 = tf.assign(self.eta_cur[1], self.eta_cur[1] +  beta / 2 * (self.model_local[1] - model_server[1]))
+            update_eta_op = tf.group(update0, update1, update2, update3)
+            self.sess.run(update_eta_op)
     
     def get_eta(self):
-        return self._eta_cur, self._eta_pre
+        with graph.as_default():
+            return self.sess.run((self.eta_cur, self.eta_pre))
     
     def process_x(self, raw_x_batch):
         return np.array(raw_x_batch)

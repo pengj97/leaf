@@ -1,4 +1,5 @@
 import math
+from re import S
 import numpy as np
 import tensorflow.compat.v1 as tf
 from baseline_constants import BYTES_WRITTEN_KEY, BYTES_READ_KEY, LOCAL_COMPUTATIONS_KEY, beta, lamda, graph
@@ -8,10 +9,11 @@ class Server:
     def __init__(self, client_model, lr):
         self.client_model = client_model
         self.lr = lr
-        self.model = client_model.get_params()
         self.selected_clients = []
         self.updates = []
         self.round_numer = 0
+        with graph.as_default():
+           self.model = [np.zeros((784, 62)), np.zeros(62)] 
 
     def set_round_number(self, round_number):
         self.round_numer = round_number
@@ -65,6 +67,7 @@ class Server:
             c.id: {BYTES_WRITTEN_KEY: 0,
                    BYTES_READ_KEY: 0,
                    LOCAL_COMPUTATIONS_KEY: 0} for c in clients}
+
         for c in clients:
             # c.model.set_params(self.model)
             c.model.set_lr_client(self.round_numer)
@@ -81,17 +84,14 @@ class Server:
         return sys_metrics
 
     def update_model(self):
-        with graph.as_default():
-            base = [tf.constant(0, shape=(784, 62), dtype=tf.float32), 
-                    tf.constant(0, shape=(62, ), dtype=tf.float32)] 
-            for (eta_cur, eta_pre) in self.updates:
-                for i in range(len(eta_cur)):
-                    base[i] = base[i] + 2 * eta_cur[i] - eta_pre[i]
-            self.set_lr_server()
-            lr = tf.constant(self.lr, dtype=tf.float32)
+        base = [np.zeros((784, 62)), np.zeros(62)] 
+        for (eta_cur, eta_pre) in self.updates:
+            for i in range(len(base)):
+                base[i] += 2 * eta_cur[i] - eta_pre[i]
+        self.set_lr_server()
 
-            self.model[0] = self.model[0] + lr * base[0]
-            self.model[1] = self.model[1] + lr * base[1]
+        for i in range(len(self.model)):
+            self.model[i] = self.model[i] + self.lr * base[i]
 
         self.updates = []
 

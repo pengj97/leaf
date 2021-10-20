@@ -19,25 +19,31 @@ class Model(ABC):
         self.lr = lr
         self.seed = seed
         self._optimizer = optimizer
-        
-        # self.graph = tf.Graph()
-        with graph.as_default():
-            tf.set_random_seed(123 + self.seed)
-            self.features, self.labels, self.train_op, self.eval_metric_ops, self.loss = self.create_model()
-            self.saver = tf.train.Saver()
+        self.model_local = None
+
         self.sess = tf.Session(graph=graph)
 
         self.size = graph_size(graph)
 
         with graph.as_default():
-            self.sess.run(tf.global_variables_initializer())
+            self.eta_cur = [tf.Variable(np.zeros((784, 62)), trainable=False, dtype=tf.float32), 
+                             tf.Variable(np.zeros(62), trainable=False, dtype=tf.float32)] 
+            self.eta_pre = [tf.Variable(np.zeros((784, 62)), trainable=False, dtype=tf.float32), 
+                             tf.Variable(np.zeros(62), trainable=False, dtype=tf.float32)]
 
             metadata = tf.RunMetadata()
             opts = tf.profiler.ProfileOptionBuilder.float_operation()
             self.flops = tf.profiler.profile(graph, run_meta=metadata, cmd='scope', options=opts).total_float_ops
 
-        np.random.seed(self.seed)
+        # self.graph = tf.Graph()
+        with graph.as_default():
+            tf.set_random_seed(123 + self.seed)
+            self.features, self.labels, self.train_op, self.eval_metric_ops, self.loss = self.create_model()
+            self.saver = tf.train.Saver()
+            self.sess.run(tf.global_variables_initializer())
 
+        np.random.seed(self.seed)
+    
     def set_params(self, model_params):
         with graph.as_default():
             all_vars = tf.trainable_variables()
@@ -46,10 +52,9 @@ class Model(ABC):
 
     def get_params(self):
         with graph.as_default():
-            # model_params = self.sess.run(tf.trainable_variables())
-            model_params = tf.trainable_variables()
+            model_params = self.sess.run(tf.trainable_variables())
         return model_params
-    
+
     def set_lr_client(self, round_number):
         self.lr = 1 / (self.lr * math.sqrt(round_number) + beta)
 
@@ -75,7 +80,15 @@ class Model(ABC):
                     returns the accuracy of the model.
         """
         return None, None, None, None, None
+    
+    @abstractmethod
+    def update_eta(self, model_server):
+        """A Tensorflow operation that update eta_i^k with client's model and server's model
+           for stochastic admm optimizer
 
+        No return
+        """
+        
     def train(self, data, num_epochs=1, batch_size=10):
         """
         Trains the client model.
@@ -91,6 +104,7 @@ class Model(ABC):
         """
         for _ in range(num_epochs):
             self.run_epoch(data, batch_size)
+            # self.update_eta()
 
         update = self.get_params()
         comp = num_epochs * (len(data['y'])//batch_size) * batch_size * self.flops

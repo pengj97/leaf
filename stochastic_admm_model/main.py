@@ -9,7 +9,7 @@ import tensorflow.compat.v1 as tf
 
 import metrics.writer as metrics_writer
 
-from baseline_constants import MAIN_PARAMS, MODEL_PARAMS
+from baseline_constants import MAIN_PARAMS, MODEL_PARAMS, graph
 from client import Client
 from server import Server
 from model import ServerModel
