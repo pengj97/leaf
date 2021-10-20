@@ -9,7 +9,7 @@ import tensorflow.compat.v1 as tf
 
 import metrics.writer as metrics_writer
 
-from baseline_constants import MAIN_PARAMS, MODEL_PARAMS, graph
+from baseline_constants import MAIN_PARAMS, MODEL_PARAMS, graph, regular, byzantine
 from client import Client
 from server import Server
 from model import ServerModel
@@ -67,7 +67,8 @@ def main():
     clients = setup_clients(args.dataset, client_model, args.use_val_set)
     client_ids, client_groups, client_num_samples = server.get_clients_info(clients)
     print('Clients in Total: %d' % len(clients))
-
+    print('Regular clients: ', regular)
+    print('Byzantine clients:', byzantine)
     # Initial status
     print('--- Random Initialization ---')
     stat_writer_fn = get_stat_writer_function(client_ids, client_groups, client_num_samples, args)

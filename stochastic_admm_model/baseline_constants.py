@@ -1,5 +1,6 @@
 """Configuration file for common models/experiments"""
 import tensorflow.compat.v1 as tf 
+import random
 graph = tf.Graph()
 
 MAIN_PARAMS = { 
@@ -41,7 +42,7 @@ MODEL_PARAMS = {
     'sent140.stacked_lstm': (0.0003, 25, 2, 100), # lr, seq_len, num_classes, num_hidden
     'sent140.bag_log_reg': (0.0003, 2), # lr, num_classes
     'femnist.cnn': (0.0003, 62), # lr, num_classes
-    'femnist.softmax': (10, 62), # lr, num_classes
+    'femnist.softmax': (100, 62), # lr, num_classes
     'shakespeare.stacked_lstm': (0.0003, 80, 80, 256), # lr, seq_len, num_classes, num_hidden
     'celeba.cnn': (0.1, 2), # lr, num_classes
     'synthetic.log_reg': (0.0003, 5, 60), # lr, num_classes, input_dim
@@ -60,3 +61,7 @@ CLIENT_ID_KEY = 'client_id'
 # Params of stochastic admm
 lamda = 0.8
 beta = 0.2
+lr = 100
+byzantine = random.sample(range(196), 4)
+regular = list(set(range(196)).difference(byzantine))
+

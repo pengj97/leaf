@@ -2,7 +2,7 @@ import math
 from re import S
 import numpy as np
 import tensorflow.compat.v1 as tf
-from baseline_constants import BYTES_WRITTEN_KEY, BYTES_READ_KEY, LOCAL_COMPUTATIONS_KEY, beta, lamda, graph
+from baseline_constants import BYTES_WRITTEN_KEY, BYTES_READ_KEY, LOCAL_COMPUTATIONS_KEY, beta, lamda, lr, graph, byzantine, regular
 
 class Server:
     
@@ -20,7 +20,7 @@ class Server:
     
     def set_lr_server(self):
         num_clients = len(self.selected_clients)
-        self.lr =  1 / (self.lr * math.sqrt(self.round_numer) + num_clients * beta)
+        self.lr =  1 / (lr * math.sqrt(self.round_numer) + num_clients * beta)
 
     def select_clients(self, my_round, possible_clients, num_clients=20):
         """Selects num_clients clients randomly from possible_clients.
@@ -85,9 +85,13 @@ class Server:
 
     def update_model(self):
         base = [np.zeros((784, 62)), np.zeros(62)] 
-        for (eta_cur, eta_pre) in self.updates:
-            for i in range(len(base)):
-                base[i] += 2 * eta_cur[i] - eta_pre[i]
+        for i in range(len(self.updates)):
+            if i in byzantine:
+                eta_cur, eta_pre = self.updates[regular[0]]
+            else:
+                eta_cur, eta_pre = self.updates[i]
+            for j in range(len(base)):
+                base[j] += 2 * eta_cur[j] - eta_pre[j]
         self.set_lr_server()
 
         for i in range(len(self.model)):

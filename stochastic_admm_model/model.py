@@ -7,7 +7,7 @@ import os
 import sys
 import tensorflow.compat.v1 as tf
 
-from baseline_constants import ACCURACY_KEY, beta, lamda, graph
+from baseline_constants import ACCURACY_KEY, beta, lamda, lr, graph
 
 from utils.model_utils import batch_data
 from utils.tf_utils import graph_size
@@ -20,6 +20,7 @@ class Model(ABC):
         self.seed = seed
         self._optimizer = optimizer
         self.model_local = None
+        self.round_number = 0
 
         with graph.as_default():
             tf.set_random_seed(123 + self.seed)
@@ -53,7 +54,7 @@ class Model(ABC):
         return model_params
 
     def set_lr_client(self, round_number):
-        self.lr = 1 / (self.lr * math.sqrt(round_number) + beta)
+        self.lr = 1 / (lr * math.sqrt(round_number) + beta)
 
     @property
     def optimizer(self):
