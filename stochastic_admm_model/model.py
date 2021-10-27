@@ -26,7 +26,7 @@ class Model(ABC):
             tf.set_random_seed(123 + self.seed)
             self.eta_cur = [np.zeros((784, 62)), np.zeros(62)] 
             self.eta_pre = [np.zeros((784, 62)), np.zeros(62)] 
-            self.features, self.labels, self.train_op, self.eval_metric_ops, self.loss = self.create_model()
+            self.features, self.labels, self.eta_cur_0, self.eta_cur_1, self.eta_pre_0, self.eta_pre_1, self.lr_train, self.train_op, self.eval_metric_ops, self.loss = self.create_model()
             self.saver = tf.train.Saver()
 
         self.sess = tf.Session(graph=graph)
@@ -79,13 +79,13 @@ class Model(ABC):
         """
         return None, None, None, None, None
     
-    @abstractmethod
-    def update_eta(self, model_server):
-        """A Tensorflow operation that update eta_i^k with client's model and server's model
-           for stochastic admm optimizer
+    # @abstractmethod
+    # def update_eta(self, model_server):
+    #     """A Tensorflow operation that update eta_i^k with client's model and server's model
+    #        for stochastic admm optimizer
 
-        No return
-        """
+    #     No return
+    #     """
         
     def train(self, data, num_epochs=1, batch_size=10):
         """
@@ -119,7 +119,12 @@ class Model(ABC):
                 self.sess.run(self.train_op,
                     feed_dict={
                         self.features: input_data,
-                        self.labels: target_data
+                        self.labels: target_data,
+                        self.eta_cur_0: self.eta_cur[0],
+                        self.eta_cur_1: self.eta_cur[1],
+                        self.eta_pre_0: self.eta_pre[0],
+                        self.eta_pre_1: self.eta_pre[1],
+                        self.lr_train: self.lr
                     })
 
     def test(self, data):

@@ -113,10 +113,20 @@ class Server:
         if clients_to_test is None:
             clients_to_test = self.selected_clients
 
+        
         for client in clients_to_test:
+            # model_client = client.model.get_params()
             # client.model.set_params(self.model)
             c_metrics = client.test(set_to_use)
             metrics[client.id] = c_metrics
+            # client.model.set_params(model_client)
+
+
+        # for i in range(len(clients_to_test)):
+        #     if i in regular:
+        #         client = clients_to_test[i]
+        #         c_metrics = client.test(set_to_use)
+        #         metrics[client.id] = c_metrics
         
         return metrics
 

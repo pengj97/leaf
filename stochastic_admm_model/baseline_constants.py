@@ -59,7 +59,7 @@ NUM_SAMPLES_KEY = 'num_samples'
 CLIENT_ID_KEY = 'client_id'
 
 # Params of stochastic admm
-lamda = 0.8
+lamda = 0.02
 beta = 0.2
 lr = 100
 byzantine = random.sample(range(196), 4)

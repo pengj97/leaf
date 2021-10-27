@@ -18,7 +18,7 @@ from utils.args import parse_args
 from utils.model_utils import read_data
 
 # tf.device('/gpu:3')
-os.environ['CUDA_VISIBLE_DEVICES']='/gpu:3'
+os.environ['CUDA_VISIBLE_DEVICES']='cpu'
 STAT_METRICS_PATH = 'metrics/stat_metrics.csv'
 SYS_METRICS_PATH = 'metrics/sys_metrics.csv'
 tf.disable_eager_execution()
@@ -69,6 +69,7 @@ def main():
     print('Clients in Total: %d' % len(clients))
     print('Regular clients: ', regular)
     print('Byzantine clients:', byzantine)
+
     # Initial status
     print('--- Random Initialization ---')
     stat_writer_fn = get_stat_writer_function(client_ids, client_groups, client_num_samples, args)

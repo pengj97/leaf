@@ -18,7 +18,7 @@ from utils.args import parse_args
 from utils.model_utils import read_data
 
 # tf.device('/gpu:3')
-os.environ['CUDA_VISIBLE_DEVICES']='1'
+os.environ['CUDA_VISIBLE_DEVICES']='2'
 STAT_METRICS_PATH = 'metrics/stat_metrics.csv'
 SYS_METRICS_PATH = 'metrics/sys_metrics.csv'
 
@@ -121,10 +121,10 @@ def  setup_clients(dataset, model=None, use_val_set=False):
         all_clients: list of Client objects.
     """
     eval_set = 'test' if not use_val_set else 'val'
-    # train_data_dir = os.path.join('..', 'data', dataset, 'data', 'train')
-    # test_data_dir = os.path.join('..', 'data', dataset, 'data', eval_set)
-    train_data_dir = os.path.join('data', dataset, 'data', 'train')
-    test_data_dir = os.path.join('data', dataset, 'data', eval_set)
+    train_data_dir = os.path.join('..', 'data', dataset, 'data', 'train')
+    test_data_dir = os.path.join('..', 'data', dataset, 'data', eval_set)
+    # train_data_dir = os.path.join('data', dataset, 'data', 'train')
+    # test_data_dir = os.path.join('data', dataset, 'data', eval_set)
     users, groups, train_data, test_data = read_data(train_data_dir, test_data_dir)
 
     clients = create_clients(users, groups, train_data, test_data, model)

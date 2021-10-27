@@ -11,6 +11,7 @@ import sys
 
 from decimal import Decimal
 
+
 models_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(models_dir)
 
@@ -21,7 +22,9 @@ from baseline_constants import (
     CLIENT_ID_KEY,
     LOCAL_COMPUTATIONS_KEY,
     NUM_ROUND_KEY,
-    NUM_SAMPLES_KEY)
+    NUM_SAMPLES_KEY, byzantine)
+
+num_byz = len(byzantine)
 
 
 def load_data(stat_metrics_file='stat_metrics.csv', sys_metrics_file='sys_metrics.csv'):
@@ -90,6 +93,42 @@ def plot_accuracy_vs_round_number(stat_metrics, weighted=False, plot_stds=False,
     plt.ylabel('Accuracy')
     plt.xlabel('Round Number')
     _set_plot_properties(kwargs)
+    plt.show()
+
+def plot_accuracy_vs_round_number_methods(stat_metrics_list,  plot_stds=False,
+        figsize=(10, 8), title_fontsize=16, **kwargs):
+    """Plots the clients' average test accuracy vs. the round number.
+
+    Args:
+        stat_metrics_list: list of pd.DataFrame as written by writer.py.
+        plot_stds: Whether to plot error bars corresponding to the std between users.
+        figsize: Size of the plot as specified by plt.figure().
+        title_fontsize: Font size for the plot's title.
+        kwargs: Arguments to be passed to _set_plot_properties."""
+    plt.figure(figsize=figsize)
+    # plt.title('Accuracy vs Round Number', fontsize=title_fontsize)
+    markers = ['d', '^', 'v', '<', '>']
+    colors = ['skyblue', 'red', 'yellow', 'purple', 'green']
+    for stat_metrics, marker, color in zip(stat_metrics_list, markers, colors):
+        
+        accuracies = stat_metrics.groupby(NUM_ROUND_KEY, as_index=False).mean()
+        # accuracies = stat_metrics.groupby(NUM_ROUND_KEY, as_index=False).quantile(0.52)
+        stds = stat_metrics.groupby(NUM_ROUND_KEY, as_index=False).std()
+
+        if plot_stds:
+            plt.errorbar(accuracies[NUM_ROUND_KEY], accuracies[ACCURACY_KEY], stds[ACCURACY_KEY])
+        else:
+            print(list(accuracies[NUM_ROUND_KEY].values))
+            print(list(accuracies[ACCURACY_KEY].values))
+            plt.plot(accuracies[NUM_ROUND_KEY], accuracies[ACCURACY_KEY], marker=marker, color=color, markevery=5)
+
+    plt.legend(['SGD', 'RSA', 'Stochastic ADMM', 'Geometric median', 'Median'], fontsize=15)
+
+    plt.ylabel('Accuracy', fontsize=15)
+    # plt.xlabel('Round Number')
+    plt.xlabel('Iteration', fontsize=15)
+    _set_plot_properties(kwargs)
+    plt.savefig('femnist.pdf')
     plt.show()
 
 

@@ -1,3 +1,4 @@
+from os import name
 from numpy.core.fromnumeric import shape
 import tensorflow.compat.v1 as tf
 
@@ -20,6 +21,11 @@ class ClientModel(Model):
         features = tf.placeholder(
             tf.float32, shape=[None, IMAGE_SIZE * IMAGE_SIZE], name='features')
         labels = tf.placeholder(tf.int64, shape=[None], name='labels')
+        eta_cur_0 = tf.placeholder(tf.float32, shape=[784,62], name='eta_cur_0')
+        eta_cur_1 = tf.placeholder(tf.float32, shape=[62,], name='eta_cur_1')
+        eta_pre_0 = tf.placeholder(tf.float32, shape=[784,62], name='eta_pre_0')
+        eta_pre_1 = tf.placeholder(tf.float32, shape=[62,], name='eta_pre_1')
+        lr_train = tf.placeholder(tf.float32, shape=[], name='lr_train')
 
         # softmax_regression : input_layer(784, 1) -> output_layer(62, 1)
         logits = tf.layers.dense(inputs=features, units=self.num_classes)
@@ -35,14 +41,13 @@ class ClientModel(Model):
         self.model_local = model.copy()
 
         grad = tf.gradients(loss, model)
-        lr = tf.constant(self.lr, dtype=tf.float32)
         
-        update0 = tf.assign(model[0], model[0] - lr * (grad[0] + 2 * self.eta_cur[0] - self.eta_pre[0]))
-        update1 = tf.assign(model[1], model[1] - lr * (grad[1] + 2 * self.eta_cur[1] - self.eta_pre[1]))
+        update0 = tf.assign(model[0], model[0] - lr_train * (grad[0] + 2 * eta_cur_0 - eta_pre_0))
+        update1 = tf.assign(model[1], model[1] - lr_train * (grad[1] + 2 * eta_cur_1 - eta_pre_1))
         train_op = tf.group(update0, update1)
         
         eval_metric_ops = tf.count_nonzero(tf.equal(labels, predictions["classes"]))
-        return features, labels, train_op, eval_metric_ops, loss
+        return features, labels, eta_cur_0, eta_cur_1, eta_pre_0,eta_pre_1, lr_train, train_op, eval_metric_ops, loss
     
     def update_eta(self, model_server):
         model_local = self.get_params()
