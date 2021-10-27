@@ -17,3 +17,14 @@ _build/
 _templates/
 autodoc/
 models/model.py
+test/
+metrics/metrics_sys.csv
+RSA/metrics/sys_metrics.csv
+stochastic_admm_model/metrics/metrics_sys_2.csv
+models/metrics/metrics_sys.csv
+RSA/metrics/metrics_sys.csv
+sgd_model/metrics/metrics_sys.csv
+geomed_model/metrics/metrics_sys.csv
+med_model/metrics/metrics_sys.csv
+stochastic_admm_model/metrics/metrics_sys.csv
+
